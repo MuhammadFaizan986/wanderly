@@ -1,16 +1,14 @@
 import type { Metadata } from "next";
-import { Plane } from "lucide-react";
+import { Suspense } from "react";
 
-import { ComingSoon } from "@/components/layout/coming-soon";
+import { SearchPage } from "@/components/search/search-page";
 
-export const metadata: Metadata = { title: "Flight search" };
+export const metadata: Metadata = { title: "Search flights" };
 
 export default function Page() {
   return (
-    <ComingSoon
-      icon={Plane}
-      title="Flight search"
-      description="Search real airline inventory with filters and smart sorting. Coming in week 3."
-    />
+    <Suspense>
+      <SearchPage />
+    </Suspense>
   );
 }

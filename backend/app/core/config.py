@@ -36,6 +36,9 @@ class Settings(BaseSettings):
     refresh_cookie_name: str = "wanderly_refresh"
     cookie_secure: bool = False
     cookie_samesite: Literal["lax", "strict", "none"] = "lax"
+    demo_login_enabled: bool = True
+    demo_user_email: str = "demo@wanderly.app"
+    auth_rate_limit_per_minute: int = 10
 
     # LLM
     llm_provider: Literal["anthropic", "openai"] = "anthropic"
@@ -50,6 +53,7 @@ class Settings(BaseSettings):
     duffel_api_url: str = "https://api.duffel.com"
     duffel_api_version: str = "v2"
     unsplash_access_key: SecretStr | None = None
+    unsplash_app_name: str = "wanderly"
     resend_api_key: SecretStr | None = None
     email_from: str = "Wanderly <onboarding@resend.dev>"
 

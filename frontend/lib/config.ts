@@ -1,4 +1,4 @@
 export const config = {
-  apiUrl: process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8100",
   appName: "Wanderly",
+  apiDocsUrl: process.env.NEXT_PUBLIC_API_DOCS_URL ?? "http://localhost:8100/docs",
 } as const;

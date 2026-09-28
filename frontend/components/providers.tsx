@@ -6,6 +6,7 @@ import { MotionConfig } from "motion/react";
 import { ThemeProvider } from "next-themes";
 import { useState } from "react";
 
+import { AuthProvider } from "@/components/auth/auth-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { ApiError } from "@/lib/api";
@@ -32,7 +33,9 @@ export function Providers({ children }: { children: React.ReactNode }) {
     <ThemeProvider attribute="class" defaultTheme="light" enableSystem disableTransitionOnChange>
       <QueryClientProvider client={queryClient}>
         <TooltipProvider delayDuration={200}>
-          <MotionConfig reducedMotion="user">{children}</MotionConfig>
+          <AuthProvider>
+            <MotionConfig reducedMotion="user">{children}</MotionConfig>
+          </AuthProvider>
           <Toaster richColors position="top-center" />
         </TooltipProvider>
         <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />

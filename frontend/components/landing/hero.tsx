@@ -1,17 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowRight, Plane, ShieldCheck, Sparkles, Sun, Utensils, Zap } from "lucide-react";
+import { Plane, ShieldCheck, Sparkles, Sun, Utensils, Zap } from "lucide-react";
 import { motion } from "motion/react";
 
-import { AiPreview } from "@/components/landing/ai-preview";
 import { AnimatedBackground } from "@/components/landing/animated-background";
-import { ApiStatus } from "@/components/landing/api-status";
-import { Button } from "@/components/ui/button";
+import { SearchCard } from "@/components/search/search-card";
 
+const ease = [0.22, 1, 0.36, 1] as const;
 const fadeUp = {
   hidden: { opacity: 0, y: 24 },
-  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] as const } },
+  show: { opacity: 1, y: 0, transition: { duration: 0.6, ease } },
 };
 
 const features = [
@@ -34,9 +32,9 @@ function FloatingCard({
       initial={{ opacity: 0, scale: 0.9 }}
       animate={{ opacity: 1, scale: 1 }}
       transition={{ delay, duration: 0.6 }}
-      className={`absolute hidden xl:block ${className}`}
+      className={`absolute hidden 2xl:block ${className}`}
     >
-      <div className="flex items-center gap-3 rounded-2xl border border-border/70 bg-card/85 px-4 py-3 shadow-lift backdrop-blur-md">
+      <div className="flex animate-float items-center gap-3 rounded-2xl border border-border/70 bg-card/85 px-4 py-3 shadow-lift backdrop-blur-md">
         {children}
       </div>
     </motion.div>
@@ -48,7 +46,7 @@ export function Hero() {
     <section className="relative isolate -mt-18 overflow-hidden pt-18">
       <AnimatedBackground />
 
-      <FloatingCard className="top-[30%] left-[4%] animate-float" delay={1.2}>
+      <FloatingCard className="top-44 left-[4%]" delay={1}>
         <span className="grid size-10 place-items-center rounded-xl bg-brand-4/20 text-brand-4">
           <Sun className="size-5" />
         </span>
@@ -58,7 +56,7 @@ export function Hero() {
         </div>
       </FloatingCard>
 
-      <FloatingCard className="top-[20%] right-[4%] animate-float-delayed" delay={1.4}>
+      <FloatingCard className="top-36 right-[4%] [&>div]:[animation-delay:-2s]" delay={1.2}>
         <span className="grid size-10 place-items-center rounded-xl bg-brand-1/15 text-brand-1">
           <Plane className="size-5" />
         </span>
@@ -68,7 +66,7 @@ export function Hero() {
         </div>
       </FloatingCard>
 
-      <FloatingCard className="top-[52%] right-[6%] animate-float" delay={1.6}>
+      <FloatingCard className="top-80 right-[7%] [&>div]:[animation-delay:-4s]" delay={1.4}>
         <span className="grid size-10 place-items-center rounded-xl bg-brand-3/15 text-brand-3">
           <Utensils className="size-5" />
         </span>
@@ -82,7 +80,7 @@ export function Hero() {
         initial="hidden"
         animate="show"
         transition={{ staggerChildren: 0.1, delayChildren: 0.1 }}
-        className="mx-auto flex max-w-5xl flex-col items-center gap-7 px-4 pt-16 pb-20 text-center sm:px-6 sm:pt-24"
+        className="mx-auto flex max-w-6xl flex-col items-center gap-7 px-4 pt-14 pb-20 text-center sm:px-6 sm:pt-20"
       >
         <motion.div variants={fadeUp}>
           <span className="inline-flex items-center gap-2 rounded-full px-4 py-1.5 text-sm font-medium shadow-soft border-gradient [--gradient-fill:var(--card)]">
@@ -93,7 +91,7 @@ export function Hero() {
 
         <motion.h1
           variants={fadeUp}
-          className="text-[2.6rem] leading-[1.1] font-bold text-balance sm:text-6xl lg:text-7xl"
+          className="max-w-4xl text-[2.6rem] leading-[1.1] font-bold text-balance sm:text-6xl lg:text-7xl"
         >
           <span className="animate-gradient-pan text-gradient">Plan Your Dream Trip</span>
           <br />
@@ -106,27 +104,12 @@ export function Hero() {
           variants={fadeUp}
           className="max-w-2xl text-lg text-pretty text-muted-foreground sm:text-xl"
         >
-          Tell Wanderly where you want to go in plain words. Get real flights, live weather, and a
-          day-by-day itinerary — then book in minutes.
+          Search real flights or just describe your trip. Wanderly checks the weather, finds flights
+          and builds a day-by-day itinerary — then you book in minutes.
         </motion.p>
 
-        <motion.div variants={fadeUp} className="flex w-full flex-col gap-4 sm:w-auto sm:flex-row">
-          <Button asChild variant="brand" className="group h-14 px-8 text-base">
-            <Link href="/plan">
-              <Sparkles data-icon="inline-start" />
-              Plan with AI
-              <ArrowRight
-                data-icon="inline-end"
-                className="transition-transform group-hover:translate-x-1"
-              />
-            </Link>
-          </Button>
-          <Button asChild variant="gradient-outline" className="h-14 px-8 text-base">
-            <Link href="/search">
-              <Plane data-icon="inline-start" />
-              Search Flights
-            </Link>
-          </Button>
+        <motion.div variants={fadeUp} className="w-full">
+          <SearchCard />
         </motion.div>
 
         <motion.ul
@@ -140,19 +123,6 @@ export function Hero() {
             </li>
           ))}
         </motion.ul>
-
-        <motion.div
-          initial={{ opacity: 0, y: 60 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7, duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
-          className="mt-6 w-full max-w-2xl"
-        >
-          <AiPreview />
-        </motion.div>
-
-        <motion.div variants={fadeUp}>
-          <ApiStatus />
-        </motion.div>
       </motion.div>
     </section>
   );

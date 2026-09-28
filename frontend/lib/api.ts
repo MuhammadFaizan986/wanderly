@@ -1,4 +1,4 @@
-import { config } from "@/lib/config";
+import type { TokenResponse } from "@/lib/types";
 
 /** Mirrors the backend error envelope: `{"error": {"code", "message", "details"}}`. */
 export interface ApiErrorBody {
@@ -22,27 +22,66 @@ type Query = Record<string, string | number | boolean | undefined | null>;
 interface RequestOptions extends Omit<RequestInit, "body"> {
   body?: unknown;
   query?: Query;
+  /** Internal: skip the automatic refresh-and-retry on 401. */
+  skipAuthRefresh?: boolean;
 }
 
-let accessToken: string | null = null;
+export const API_PREFIX = "/api/v1";
 
-/** The access token lives in memory only; the refresh token is an httpOnly cookie. */
+// ---- Session plumbing -------------------------------------------------------------
+// The access token lives in memory only; the refresh token is an httpOnly cookie that
+// JavaScript can't read. On a 401 we exchange the cookie for a new access token once.
+
+let accessToken: string | null = null;
+let refreshInFlight: Promise<TokenResponse | null> | null = null;
+let onSessionChange: ((session: TokenResponse | null) => void) | null = null;
+
 export function setAccessToken(token: string | null) {
   accessToken = token;
 }
 
+export function subscribeToSession(listener: (session: TokenResponse | null) => void) {
+  onSessionChange = listener;
+  return () => {
+    if (onSessionChange === listener) onSessionChange = null;
+  };
+}
+
+/** Single-flight refresh: concurrent 401s share one /auth/refresh call. */
+export function refreshSession(): Promise<TokenResponse | null> {
+  refreshInFlight ??= apiFetch<TokenResponse>(`${API_PREFIX}/auth/refresh`, {
+    method: "POST",
+    skipAuthRefresh: true,
+  })
+    .then((session) => {
+      setAccessToken(session.access_token);
+      onSessionChange?.(session);
+      return session;
+    })
+    .catch(() => {
+      setAccessToken(null);
+      onSessionChange?.(null);
+      return null;
+    })
+    .finally(() => {
+      refreshInFlight = null;
+    });
+  return refreshInFlight;
+}
+
+// ---- Fetch wrapper ----------------------------------------------------------------
+
 function buildUrl(path: string, query?: Query) {
-  const url = new URL(path.startsWith("http") ? path : `${config.apiUrl}${path}`);
+  const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query ?? {})) {
-    if (value !== undefined && value !== null && value !== "") {
-      url.searchParams.set(key, String(value));
-    }
+    if (value !== undefined && value !== null && value !== "") params.set(key, String(value));
   }
-  return url.toString();
+  const qs = params.toString();
+  return qs ? `${path}?${qs}` : path;
 }
 
 export async function apiFetch<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  const { body, query, headers, ...init } = options;
+  const { body, query, headers, skipAuthRefresh, ...init } = options;
   const finalHeaders = new Headers(headers);
   if (body !== undefined) finalHeaders.set("Content-Type", "application/json");
   if (accessToken) finalHeaders.set("Authorization", `Bearer ${accessToken}`);
@@ -63,13 +102,18 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
     );
   }
 
+  if (response.status === 401 && !skipAuthRefresh && accessToken) {
+    const session = await refreshSession();
+    if (session) return apiFetch<T>(path, { ...options, skipAuthRefresh: true });
+  }
+
   if (!response.ok) {
     const payload = (await response.json().catch(() => null)) as ApiErrorBody | null;
     throw new ApiError(
       response.status,
-      payload?.error.code ?? "http_error",
-      payload?.error.message ?? "Something went wrong. Please try again.",
-      payload?.error.details,
+      payload?.error?.code ?? "http_error",
+      payload?.error?.message ?? "Something went wrong. Please try again.",
+      payload?.error?.details,
     );
   }
 
@@ -79,17 +123,30 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
 
 export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
-    apiFetch<T>(path, { ...options, method: "GET" }),
+    apiFetch<T>(`${API_PREFIX}${path}`, { ...options, method: "GET" }),
   post: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    apiFetch<T>(path, { ...options, method: "POST", body }),
+    apiFetch<T>(`${API_PREFIX}${path}`, { ...options, method: "POST", body }),
   patch: <T>(path: string, body?: unknown, options?: RequestOptions) =>
-    apiFetch<T>(path, { ...options, method: "PATCH", body }),
+    apiFetch<T>(`${API_PREFIX}${path}`, { ...options, method: "PATCH", body }),
   delete: <T>(path: string, options?: RequestOptions) =>
-    apiFetch<T>(path, { ...options, method: "DELETE" }),
+    apiFetch<T>(`${API_PREFIX}${path}`, { ...options, method: "DELETE" }),
 };
 
 export interface HealthResponse {
   status: "ok" | "degraded";
   environment: string;
   checks: Record<string, "ok" | "error">;
+}
+
+/** Field-level messages from a 422 validation error, keyed by field name. */
+export function fieldErrors(error: unknown): Record<string, string> {
+  if (!(error instanceof ApiError) || !Array.isArray(error.details)) return {};
+  const result: Record<string, string> = {};
+  for (const item of error.details as { loc?: unknown[]; msg?: string }[]) {
+    const field = item.loc?.at(-1);
+    if (typeof field === "string" && item.msg) {
+      result[field] = item.msg.replace(/^Value error, /, "");
+    }
+  }
+  return result;
 }

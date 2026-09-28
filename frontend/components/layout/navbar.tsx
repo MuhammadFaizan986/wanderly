@@ -6,8 +6,10 @@ import { Menu, Sparkles } from "lucide-react";
 import { motion, useMotionValueEvent, useScroll } from "motion/react";
 import { useState } from "react";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { Logo } from "@/components/layout/logo";
 import { ThemeToggle } from "@/components/layout/theme-toggle";
+import { UserMenu } from "@/components/layout/user-menu";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
@@ -20,6 +22,7 @@ const links = [
 
 export function Navbar() {
   const pathname = usePathname();
+  const { user, status } = useAuth();
   const { scrollY } = useScroll();
   const [scrolled, setScrolled] = useState(false);
   useMotionValueEvent(scrollY, "change", (y) => setScrolled(y > 8));
@@ -66,9 +69,15 @@ export function Navbar() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
-          <Button asChild variant="ghost" className="hidden rounded-full px-4 sm:inline-flex">
-            <Link href="/login">Log in</Link>
-          </Button>
+          {status === "loading" ? (
+            <span className="hidden size-10 animate-pulse rounded-full bg-muted sm:block" />
+          ) : user ? (
+            <UserMenu user={user} />
+          ) : (
+            <Button asChild variant="ghost" className="hidden rounded-full px-4 sm:inline-flex">
+              <Link href="/login">Log in</Link>
+            </Button>
+          )}
           <Button
             asChild
             variant="ink"
@@ -91,16 +100,18 @@ export function Navbar() {
                 <Logo />
               </SheetTitle>
               <ul className="flex flex-col gap-1 px-2">
-                {[...links, { href: "/login", label: "Log in" } as const].map((link) => (
-                  <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      className="block rounded-xl px-3 py-2.5 font-medium hover:bg-accent"
-                    >
-                      {link.label}
-                    </Link>
-                  </li>
-                ))}
+                {[...links, ...(user ? [] : [{ href: "/login", label: "Log in" } as const])].map(
+                  (link) => (
+                    <li key={link.href}>
+                      <Link
+                        href={link.href}
+                        className="block rounded-xl px-3 py-2.5 font-medium hover:bg-accent"
+                      >
+                        {link.label}
+                      </Link>
+                    </li>
+                  ),
+                )}
               </ul>
               <div className="px-4 pt-2">
                 <Button asChild variant="brand" className="h-11 w-full">

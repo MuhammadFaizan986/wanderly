@@ -4,13 +4,13 @@ import { Suspense } from "react";
 import { AuthForm } from "@/components/auth/auth-form";
 import { AuthShell } from "@/components/auth/auth-shell";
 
-export const metadata: Metadata = { title: "Log in" };
+export const metadata: Metadata = { title: "Create account" };
 
-export default function LoginPage() {
+export default function RegisterPage() {
   return (
-    <AuthShell title="Welcome back" subtitle="Log in to see your trips and bookings.">
+    <AuthShell title="Create your account" subtitle="Save trips, book flights and plan with AI.">
       <Suspense>
-        <AuthForm mode="login" />
+        <AuthForm mode="register" />
       </Suspense>
     </AuthShell>
   );
