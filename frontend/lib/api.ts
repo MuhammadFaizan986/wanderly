@@ -136,11 +136,15 @@ export async function* streamEvents(
 
   let response: Response;
   try {
-    response = await fetch(`${API_PREFIX}${path}`, {
+    // Long AI streams can go straight to the API (NEXT_PUBLIC_STREAM_URL) instead of
+    // through the hosting proxy, which may time out slow responses. They only need the
+    // bearer token, not the refresh cookie, so no cross-site cookies are involved.
+    const base = process.env.NEXT_PUBLIC_STREAM_URL ?? "";
+    response = await fetch(`${base}${API_PREFIX}${path}`, {
       method: "POST",
       headers,
       body: JSON.stringify(body),
-      credentials: "include",
+      credentials: base ? "omit" : "include",
       signal,
     });
   } catch (error) {

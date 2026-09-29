@@ -1,11 +1,8 @@
 import type { NextConfig } from "next";
 
-// Server-side only: where the FastAPI backend lives. The browser always talks to
-// same-origin paths, so the httpOnly refresh cookie stays first-party in production.
-// On Render the API is reached over the private network via API_HOSTPORT ("host:port").
-const apiUrl =
-  process.env.API_URL ??
-  (process.env.API_HOSTPORT ? `http://${process.env.API_HOSTPORT}` : "http://localhost:8100");
+// Server-side only: where the FastAPI backend lives (the Railway URL in production).
+// The browser talks to same-origin paths, so the httpOnly refresh cookie stays first-party.
+const apiUrl = process.env.API_URL ?? "http://localhost:8100";
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
