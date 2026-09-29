@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 FROM python:3.12-slim AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -14,7 +13,8 @@ WORKDIR /app
 
 # Dependencies first for layer caching.
 COPY pyproject.toml uv.lock ./
-RUN --mount=type=cache,target=/root/.cache/uv uv sync --frozen --no-dev
+# No BuildKit cache mount: Railway rejects cache mounts without its own service-id prefix.
+RUN uv sync --frozen --no-dev --no-cache
 
 COPY . .
 
