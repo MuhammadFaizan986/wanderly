@@ -49,6 +49,8 @@ class Settings(BaseSettings):
     llm_max_tool_rounds: int = 5
 
     # External APIs
+    # "auto" uses Duffel when DUFFEL_API_TOKEN is set, otherwise realistic sample data.
+    flight_provider: Literal["auto", "duffel", "sample"] = "auto"
     duffel_api_token: SecretStr | None = None
     duffel_api_url: str = "https://api.duffel.com"
     duffel_api_version: str = "v2"
@@ -59,6 +61,7 @@ class Settings(BaseSettings):
 
     # Caching / limits
     flight_search_cache_ttl_seconds: int = 600
+    flight_search_rate_limit_per_minute: int = 30
     chat_rate_limit_per_hour: int = 30
 
     @field_validator("cors_origins", mode="before")
