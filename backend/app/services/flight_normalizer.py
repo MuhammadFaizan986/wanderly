@@ -6,7 +6,15 @@ from datetime import datetime
 from decimal import Decimal
 from typing import Any
 
-from app.schemas.flight import Carrier, FlightOffer, Layover, Place, Segment, Slice
+from app.schemas.flight import (
+    Carrier,
+    FlightOffer,
+    Layover,
+    OfferPassenger,
+    Place,
+    Segment,
+    Slice,
+)
 
 _DURATION = re.compile(r"P(?:(\d+)D)?(?:T(?:(\d+)H)?(?:(\d+)M)?)?")
 
@@ -92,6 +100,18 @@ def _bags(raw_slices: list[dict[str, Any]], bag_type: str) -> int:
     return min(counts) if counts else 0
 
 
+def _passenger(raw: dict[str, Any]) -> OfferPassenger:
+    age = raw.get("age")
+    kind = raw.get("type")
+    if kind not in ("adult", "child", "infant_without_seat"):
+        kind = (
+            "infant_without_seat"
+            if age is not None and age < 2
+            else ("child" if age is not None and age < 12 else "adult")
+        )
+    return OfferPassenger(id=raw["id"], type=kind, age=age)
+
+
 def normalize_offer(raw: dict[str, Any], cabin_class: str) -> FlightOffer:
     slices = [_slice(s) for s in raw["slices"]]
     conditions = raw.get("conditions") or {}
@@ -116,4 +136,5 @@ def normalize_offer(raw: dict[str, Any], cabin_class: str) -> FlightOffer:
         emissions_kg=int(emissions) if emissions else None,
         total_duration_minutes=sum(s.duration_minutes for s in slices),
         max_stops=max(s.stops for s in slices),
+        passengers=[_passenger(p) for p in raw.get("passengers", [])],
     )

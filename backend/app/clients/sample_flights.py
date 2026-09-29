@@ -153,13 +153,23 @@ class SampleFlightSource:
         destination = self.airports[request.destination]
 
         itineraries = self._itineraries(origin, destination)
+        passengers = [
+            {"id": f"pas_sample_{seed[:10]}{i}", "type": kind, "age": age}
+            for i, (kind, age) in enumerate(
+                [("adult", None)] * request.adults
+                + [("child", 8)] * request.children
+                + [("infant_without_seat", 1)] * request.infants
+            )
+        ]
         offers: list[dict[str, Any]] = []
         for itinerary in itineraries:
             out_times = rng.sample(DEPARTURE_TIMES, k=2 if itinerary.airline.iata != "ZZ" else 1)
             ret_times = rng.sample(DEPARTURE_TIMES, k=2) if request.return_date else [None]
             for out_t in out_times:
                 for ret_t in ret_times:
-                    offers.append(self._offer(request, itinerary, out_t, ret_t, rng))
+                    offer = self._offer(request, itinerary, out_t, ret_t, rng)
+                    offer["passengers"] = passengers
+                    offers.append(offer)
 
         rng.shuffle(offers)
         now = datetime.now().astimezone()
@@ -168,6 +178,7 @@ class SampleFlightSource:
             "live_mode": False,
             "cabin_class": request.cabin_class.value,
             "created_at": now.isoformat(),
+            "passengers": passengers,
             "offers": offers[:60],
         }
 
@@ -315,3 +326,13 @@ class SampleFlightSource:
             "duration": _iso_duration(int((current_utc - start_utc).total_seconds() // 60)),
             "segments": segments,
         }
+
+
+def sample_order(offer_id: str) -> dict[str, Any]:
+    """Mimic Duffel's order response for a sample offer."""
+    digest = hashlib.sha256(f"{offer_id}{datetime.now().isoformat()}".encode()).hexdigest()
+    alphabet = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+    reference = "".join(
+        alphabet[int(digest[i : i + 2], 16) % len(alphabet)] for i in range(0, 12, 2)
+    )
+    return {"id": f"ord_sample_{digest[:22]}", "booking_reference": reference, "live_mode": False}

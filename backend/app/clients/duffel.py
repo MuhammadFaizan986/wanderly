@@ -4,7 +4,7 @@ import httpx
 
 from app.clients.http import request_with_retry
 from app.core.config import get_settings
-from app.core.exceptions import AppError, ExternalServiceError
+from app.core.exceptions import AppError, ExternalServiceError, OfferExpiredError
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -40,6 +40,9 @@ class DuffelClient:
     async def get_offer(self, offer_id: str) -> dict[str, Any]:
         return await self._send("GET", f"/air/offers/{offer_id}")
 
+    async def create_order(self, payload: dict[str, Any]) -> dict[str, Any]:
+        return await self._send("POST", "/air/orders", json={"data": payload})
+
     async def _send(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
         async with httpx.AsyncClient(
             base_url=self._base_url, headers=self._headers, timeout=SEARCH_TIMEOUT
@@ -49,7 +52,14 @@ class DuffelClient:
             except httpx.HTTPStatusError as exc:
                 errors = _duffel_errors(exc.response)
                 logger.warning("duffel_error", status=exc.response.status_code, errors=errors)
-                if exc.response.status_code in (400, 404, 422):
+                codes = {e.get("code") for e in errors}
+                if exc.response.status_code in (404, 410) or codes & {
+                    "offer_no_longer_available",
+                    "offer_expired",
+                    "not_found",
+                }:
+                    raise OfferExpiredError() from exc
+                if exc.response.status_code in (400, 422):
                     message = errors[0].get("message") if errors else None
                     raise AppError(
                         message or "The airline couldn't process this request.",

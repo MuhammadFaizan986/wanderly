@@ -64,6 +64,17 @@ class RateLimitedError(AppError):
     message = "Too many requests. Please slow down."
 
 
+class GoneError(AppError):
+    status_code = status.HTTP_410_GONE
+    code = "gone"
+    message = "This resource is no longer available."
+
+
+class OfferExpiredError(GoneError):
+    code = "offer_expired"
+    message = "This fare is no longer available. Please search again for current prices."
+
+
 class ExternalServiceError(AppError):
     status_code = status.HTTP_502_BAD_GATEWAY
     code = "external_service_error"

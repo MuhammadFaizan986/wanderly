@@ -121,6 +121,83 @@ export async function apiFetch<T>(path: string, options: RequestOptions = {}): P
   return (await response.json()) as T;
 }
 
+/**
+ * POST a request and read the reply as Server-Sent Events.
+ * (EventSource can't POST or send auth headers, so this reads the fetch body stream.)
+ */
+export async function* streamEvents(
+  path: string,
+  body: unknown,
+  signal?: AbortSignal,
+  retried = false,
+): AsyncGenerator<{ event: string; data: unknown }> {
+  const headers = new Headers({ "Content-Type": "application/json", Accept: "text/event-stream" });
+  if (accessToken) headers.set("Authorization", `Bearer ${accessToken}`);
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_PREFIX}${path}`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(body),
+      credentials: "include",
+      signal,
+    });
+  } catch (error) {
+    if (signal?.aborted) return;
+    throw new ApiError(
+      0,
+      "network_error",
+      "Can't reach Wanderly right now. Check your connection.",
+      error,
+    );
+  }
+
+  if (response.status === 401 && accessToken && !retried) {
+    if (await refreshSession()) {
+      yield* streamEvents(path, body, signal, true);
+      return;
+    }
+  }
+  if (!response.ok || !response.body) {
+    const payload = (await response.json().catch(() => null)) as ApiErrorBody | null;
+    throw new ApiError(
+      response.status,
+      payload?.error?.code ?? "http_error",
+      payload?.error?.message ?? "Something went wrong. Please try again.",
+      payload?.error?.details,
+    );
+  }
+
+  const reader = response.body.pipeThrough(new TextDecoderStream()).getReader();
+  let buffer = "";
+  try {
+    while (true) {
+      const { value, done } = await reader.read();
+      if (done) break;
+      buffer += value;
+      let boundary: number;
+      while ((boundary = buffer.indexOf("\n\n")) !== -1) {
+        const chunk = buffer.slice(0, boundary);
+        buffer = buffer.slice(boundary + 2);
+        let event = "message";
+        const data: string[] = [];
+        for (const line of chunk.split("\n")) {
+          if (line.startsWith("event:")) event = line.slice(6).trim();
+          else if (line.startsWith("data:")) data.push(line.slice(5).trimStart());
+          // Lines starting with ":" are keep-alive comments.
+        }
+        if (data.length) yield { event, data: JSON.parse(data.join("\n")) };
+      }
+    }
+  } catch (error) {
+    if (signal?.aborted) return;
+    throw error;
+  } finally {
+    reader.releaseLock();
+  }
+}
+
 export const api = {
   get: <T>(path: string, options?: RequestOptions) =>
     apiFetch<T>(`${API_PREFIX}${path}`, { ...options, method: "GET" }),

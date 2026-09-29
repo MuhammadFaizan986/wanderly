@@ -1,5 +1,6 @@
 import hashlib
 from collections import defaultdict
+from datetime import UTC, datetime
 from typing import Any, Literal
 
 from redis.asyncio import Redis
@@ -9,7 +10,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.clients.duffel import DuffelClient
 from app.clients.sample_flights import HUB_CODES, SampleFlightSource
 from app.core.config import get_settings
-from app.core.exceptions import AppError
+from app.core.exceptions import AppError, OfferExpiredError
 from app.core.logging import get_logger
 from app.models import Airport
 from app.schemas.flight import (
@@ -17,6 +18,7 @@ from app.schemas.flight import (
     FlightOffer,
     FlightSearchRequest,
     FlightSearchResponse,
+    OfferDetailsResponse,
 )
 from app.services.flight_normalizer import normalize_offer
 
@@ -88,6 +90,38 @@ class FlightService:
         )
         return response
 
+    async def get_offer(self, offer_id: str) -> OfferDetailsResponse:
+        """Return an offer with a fresh price check (Duffel) or from cache (sample)."""
+        source = active_source()
+        cached_raw = await self.redis.get(offer_cache_key(offer_id))
+        cached = FlightOffer.model_validate_json(cached_raw) if cached_raw else None
+
+        if source == "sample" or offer_id.startswith("off_sample_"):
+            if cached is None:
+                raise OfferExpiredError()
+            offer = cached
+        else:
+            raw = await DuffelClient().get_offer(offer_id)
+            offer = normalize_offer(raw, cached.cabin_class if cached else _cabin_of(raw))
+            if cached:
+                offer.tags = cached.tags
+
+        if offer.expires_at and offer.expires_at <= datetime.now(UTC):
+            raise OfferExpiredError()
+
+        price_changed = cached is not None and cached.total_amount != offer.total_amount
+        await self.redis.set(
+            offer_cache_key(offer.id),
+            offer.model_dump_json(),
+            ex=self.settings.flight_search_cache_ttl_seconds * 3,
+        )
+        return OfferDetailsResponse(
+            offer=offer,
+            source="sample" if offer_id.startswith("off_sample_") else source,
+            price_changed=price_changed,
+            previous_total_amount=cached.total_amount if price_changed and cached else None,
+        )
+
     async def _fetch(
         self, request: FlightSearchRequest, source: FlightSource, airports: dict[str, Airport]
     ) -> dict[str, Any]:
@@ -98,6 +132,15 @@ class FlightService:
     async def _airports(self, codes: set[str]) -> dict[str, Airport]:
         result = await self.session.execute(select(Airport).where(Airport.iata_code.in_(codes)))
         return {a.iata_code: a for a in result.scalars()}
+
+
+def _cabin_of(raw: dict[str, Any]) -> str:
+    for slice_ in raw.get("slices", []):
+        for segment in slice_.get("segments", []):
+            for passenger in segment.get("passengers", []):
+                if passenger.get("cabin_class"):
+                    return str(passenger["cabin_class"])
+    return "economy"
 
 
 def _duffel_payload(request: FlightSearchRequest) -> dict[str, Any]:

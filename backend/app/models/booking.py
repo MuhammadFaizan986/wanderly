@@ -34,5 +34,7 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     destination: Mapped[str] = mapped_column(String(3))
     departure_at: Mapped[datetime]
     return_at: Mapped[datetime | None]
+    contact_email: Mapped[str | None] = mapped_column(String(320))
+    contact_phone: Mapped[str | None] = mapped_column(String(20))
     passengers: Mapped[list[dict[str, Any]]]
     raw_offer: Mapped[dict[str, Any]]

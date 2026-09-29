@@ -93,6 +93,12 @@ class Slice(ApiModel):
     layovers: list[Layover]
 
 
+class OfferPassenger(ApiModel):
+    id: str
+    type: Literal["adult", "child", "infant_without_seat"]
+    age: int | None = None
+
+
 class FlightOffer(ApiModel):
     id: str
     total_amount: Decimal
@@ -111,6 +117,7 @@ class FlightOffer(ApiModel):
     emissions_kg: int | None
     total_duration_minutes: int
     max_stops: int
+    passengers: list[OfferPassenger] = Field(default_factory=list)
     tags: list[Literal["best", "cheapest", "fastest"]] = Field(default_factory=list)
     score: float = 0
 
@@ -135,3 +142,10 @@ class FlightSearchResponse(ApiModel):
     max_duration_minutes: int | None
     expires_at: datetime | None
     cached: bool = False
+
+
+class OfferDetailsResponse(ApiModel):
+    offer: FlightOffer
+    source: Literal["duffel", "sample"]
+    price_changed: bool = False
+    previous_total_amount: Decimal | None = None

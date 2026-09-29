@@ -106,3 +106,27 @@ export function activeFilterCount(filters: FlightFilters) {
     (filters.maxDuration !== null ? 1 : 0)
   );
 }
+
+/** Rebuild the search URL an offer came from (used for "search again" on expiry). */
+export function offerSearchQuery(offer: FlightOffer) {
+  const out = offer.slices[0];
+  const back = offer.slices[1];
+  const count = (type: string) => offer.passengers?.filter((p) => p.type === type).length ?? 0;
+  const query = new URLSearchParams({
+    from: out.origin.iata_code,
+    to: out.destination.iata_code,
+    depart: out.departing_at.slice(0, 10),
+    adults: String(Math.max(count("adult"), 1)),
+    children: String(count("child")),
+    infants: String(count("infant_without_seat")),
+    cabin: offer.cabin_class,
+  });
+  if (back) query.set("return", back.departing_at.slice(0, 10));
+  return query.toString();
+}
+
+export const PASSENGER_TYPE_LABELS = {
+  adult: "Adult",
+  child: "Child",
+  infant_without_seat: "Infant",
+} as const;

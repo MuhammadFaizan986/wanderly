@@ -111,6 +111,7 @@ export interface FlightOffer {
   emissions_kg: number | null;
   total_duration_minutes: number;
   max_stops: number;
+  passengers?: OfferPassenger[];
   tags: OfferTag[];
   score: number;
 }
@@ -146,4 +147,66 @@ export interface FlightSearchRequest {
   children: number;
   infants: number;
   cabin_class: CabinClass;
+}
+
+export interface OfferPassenger {
+  id: string;
+  type: "adult" | "child" | "infant_without_seat";
+  age: number | null;
+}
+
+export interface OfferDetailsResponse {
+  offer: FlightOffer & { passengers: OfferPassenger[] };
+  source: "duffel" | "sample";
+  price_changed: boolean;
+  previous_total_amount: string | null;
+}
+
+export type BookingStatus = "pending" | "confirmed" | "cancelled" | "failed";
+export type PassengerTitle = "mr" | "ms" | "mrs" | "miss" | "dr";
+
+export interface BookedPassenger {
+  id: string;
+  type: OfferPassenger["type"];
+  title: PassengerTitle;
+  given_name: string;
+  family_name: string;
+  gender: "m" | "f";
+  born_on: string;
+}
+
+export interface Booking {
+  id: string;
+  booking_reference: string | null;
+  order_id: string | null;
+  status: BookingStatus;
+  total_amount: string;
+  currency: string;
+  origin: string;
+  destination: string;
+  departure_at: string;
+  return_at: string | null;
+  passengers: BookedPassenger[];
+  contact_email: string | null;
+  offer: FlightOffer;
+  created_at: string;
+  source: "duffel" | "sample";
+}
+
+export interface BookingSummary {
+  id: string;
+  booking_reference: string | null;
+  status: BookingStatus;
+  total_amount: string;
+  currency: string;
+  origin: string;
+  destination: string;
+  origin_city: string;
+  destination_city: string;
+  departure_at: string;
+  return_at: string | null;
+  passenger_count: number;
+  airline: string;
+  airline_logo_url: string | null;
+  created_at: string;
 }

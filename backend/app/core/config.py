@@ -43,7 +43,12 @@ class Settings(BaseSettings):
     # LLM
     llm_provider: Literal["anthropic", "openai"] = "anthropic"
     anthropic_api_key: SecretStr | None = None
-    anthropic_model: str = "claude-sonnet-5"
+    anthropic_model: str = "claude-opus-5"
+    # Chat works well at medium effort; raise to "high" if answers feel shallow.
+    llm_effort: Literal["low", "medium", "high", "xhigh", "max"] = "medium"
+    llm_max_tokens: int = 16_000
+    # Retry safety-classifier refusals on Anthropic's recommended fallback model.
+    llm_refusal_fallbacks: bool = True
     openai_api_key: SecretStr | None = None
     openai_model: str = "gpt-5-mini"
     llm_max_tool_rounds: int = 5
