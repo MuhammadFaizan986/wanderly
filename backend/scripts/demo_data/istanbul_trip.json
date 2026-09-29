@@ -1,0 +1,247 @@
+{
+  "days": [
+    {
+      "day": 1,
+      "date": "2027-04-10",
+      "title": "Old City classics: bazaars, kebab and baklava",
+      "activities": [
+        {
+          "lat": 41.0134,
+          "lng": 28.9772,
+          "time": "morning",
+          "place": "Hafız Mustafa 1864, Sirkeci",
+          "title": "Coffee and simit in Sirkeci",
+          "category": "food",
+          "cost_usd": 12,
+          "start_time": null,
+          "description": "Ease in with Turkish coffee and a tray of syrupy pastries at Hafız Mustafa 1864, a century-old sweetshop near the station. Order a half portion of künefe to share.",
+          "duration_minutes": 60
+        },
+        {
+          "lat": 41.0165,
+          "lng": 28.9705,
+          "time": "morning",
+          "place": "Spice Bazaar (Mısır Çarşısı)",
+          "title": "Spice Bazaar grazing",
+          "category": "shopping",
+          "cost_usd": null,
+          "start_time": null,
+          "description": "Wander the Mısır Çarşısı for pistachio Turkish delight, dried mulberries and Maraş ice cream. Prices drop noticeably on the side streets outside the main hall.",
+          "duration_minutes": 90
+        },
+        {
+          "lat": 41.0135,
+          "lng": 28.9779,
+          "time": "afternoon",
+          "place": "Şehzade Cağ Kebabı",
+          "title": "Cağ kebabı lunch",
+          "category": "food",
+          "cost_usd": 18,
+          "start_time": null,
+          "description": "Şehzade Cağ Kebabı serves one thing: horizontally-stacked Erzurum-style lamb kebab carved onto skewers. Order by the skewer and add a glass of ayran.",
+          "duration_minutes": 75
+        },
+        {
+          "lat": 41.0086,
+          "lng": 28.9802,
+          "time": "afternoon",
+          "place": "Hagia Sophia",
+          "title": "Hagia Sophia and Sultanahmet stroll",
+          "category": "sight",
+          "cost_usd": 27,
+          "start_time": null,
+          "description": "Walk off lunch between Hagia Sophia and the Blue Mosque. Go late afternoon when the tour-group crowds thin; dress modestly for mosque entry.",
+          "duration_minutes": 120
+        },
+        {
+          "lat": 41.0158,
+          "lng": 28.9563,
+          "time": "evening",
+          "place": "Vefa Bozacısı",
+          "title": "Boza at Vefa Bozacısı",
+          "category": "food",
+          "cost_usd": 4,
+          "start_time": null,
+          "description": "A fermented millet drink served with cinnamon and roasted chickpeas in an 1876 tiled shop — one of the city's most distinctive tastes.",
+          "duration_minutes": 30
+        },
+        {
+          "lat": 41.0166,
+          "lng": 28.9707,
+          "time": "evening",
+          "place": "Pandeli",
+          "title": "Dinner at Pandeli",
+          "category": "food",
+          "cost_usd": 45,
+          "start_time": null,
+          "description": "Turquoise-tiled Ottoman dining room above the Spice Bazaar gate; the sea bass in paper and eggplant böreği are the classics. Book ahead.",
+          "duration_minutes": 105
+        }
+      ]
+    },
+    {
+      "day": 2,
+      "date": "2027-04-11",
+      "title": "Slow morning in Cihangir, then the Bosphorus",
+      "activities": [
+        {
+          "lat": 41.0311,
+          "lng": 28.9822,
+          "time": "morning",
+          "place": "Van Kahvaltı Evi",
+          "title": "Long Anatolian breakfast in Cihangir",
+          "category": "food",
+          "cost_usd": 18,
+          "start_time": null,
+          "description": "Take your time over a Van-style spread of herbed otlu peynir, honeyed kaymak, menemen and bottomless tea. No rush — nothing else is booked until midday.",
+          "duration_minutes": 120
+        },
+        {
+          "lat": 41.0243,
+          "lng": 28.9759,
+          "time": "morning",
+          "place": "Karaköy Güllüoğlu",
+          "title": "Baklava stop on the way down to the water",
+          "category": "food",
+          "cost_usd": 10,
+          "start_time": null,
+          "description": "A gentle downhill walk from Cihangir to Karaköy for fıstıklı baklava and şöbiyet at the counter. Grab a box for the boat.",
+          "duration_minutes": 45
+        },
+        {
+          "lat": 41.0206,
+          "lng": 28.9769,
+          "time": "afternoon",
+          "place": "Kabataş / Eminönü Bosphorus ferry pier",
+          "title": "Bosphorus cruise up to Anadolu Kavağı",
+          "category": "activity",
+          "cost_usd": 12,
+          "start_time": null,
+          "description": "Take the Şehir Hatları public Bosphorus ferry past Dolmabahçe, the Rumeli Fortress and the wooden yalı mansions. Sit on the upper deck with tea; the short round-trip runs about two hours, the long one takes most of the afternoon.",
+          "duration_minutes": 180
+        },
+        {
+          "lat": 41.0442,
+          "lng": 29.0331,
+          "time": "evening",
+          "place": "Ortaköy",
+          "title": "Kumpir and waterfront wander in Ortaköy",
+          "category": "food",
+          "cost_usd": 8,
+          "start_time": null,
+          "description": "Stuffed baked potatoes and waffles by the little mosque under the bridge — a easy, low-effort snack with the best bridge view in the city.",
+          "duration_minutes": 75
+        },
+        {
+          "lat": 41.0232,
+          "lng": 28.9784,
+          "time": "evening",
+          "place": "Karaköy Lokantası",
+          "title": "Relaxed dinner at Karaköy Lokantası",
+          "category": "food",
+          "cost_usd": 45,
+          "start_time": null,
+          "description": "Handsome tiled dining room doing refined versions of Turkish home cooking and mezes — calmer and earlier-finishing than a meyhane night. Reserve for around 20:00.",
+          "duration_minutes": 120
+        }
+      ]
+    },
+    {
+      "day": 3,
+      "date": "2027-04-12",
+      "title": "Asian side: Kadıköy market and Moda",
+      "activities": [
+        {
+          "lat": 41.0176,
+          "lng": 28.9733,
+          "time": "morning",
+          "place": "Eminönü Ferry Terminal",
+          "title": "Ferry to Kadıköy",
+          "category": "transport",
+          "cost_usd": 2,
+          "start_time": null,
+          "description": "Take the public ferry from Eminönü or Karaköy — 20 minutes across the Bosphorus for the price of a transit fare, with tea and seagulls on deck.",
+          "duration_minutes": 40
+        },
+        {
+          "lat": 40.9899,
+          "lng": 29.0262,
+          "time": "morning",
+          "place": "Kadıköy Çarşı (Güneşlibahçe Sokak)",
+          "title": "Kadıköy market crawl",
+          "category": "food",
+          "cost_usd": 15,
+          "start_time": null,
+          "description": "Fish stalls, pickle shops (try a glass of turşu suyu), cheese mongers and roasted nuts along Güneşlibahçe Sokak. Stop at Fazıl Bey for a properly made Turkish coffee.",
+          "duration_minutes": 120
+        },
+        {
+          "lat": 40.99,
+          "lng": 29.0268,
+          "time": "afternoon",
+          "place": "Çiya Sofrası",
+          "title": "Lunch at Çiya Sofrası",
+          "category": "food",
+          "cost_usd": 22,
+          "start_time": null,
+          "description": "Musa Dağdeviren's legendary kitchen of near-forgotten Anatolian regional dishes — pick from the steam trays and kebabs, they change daily. Pay by weight; it's excellent value.",
+          "duration_minutes": 90
+        },
+        {
+          "lat": 40.9893,
+          "lng": 29.0281,
+          "time": "afternoon",
+          "place": "Baylan Pastanesi Kadıköy",
+          "title": "Kup griye at Baylan Pastanesi",
+          "category": "food",
+          "cost_usd": 9,
+          "start_time": null,
+          "description": "A 1961 patisserie institution; order the kup griye — caramel, croquant and ice cream — in the little back garden.",
+          "duration_minutes": 45
+        },
+        {
+          "lat": 40.9787,
+          "lng": 29.0245,
+          "time": "evening",
+          "place": "Moda Sahili",
+          "title": "Sunset walk along Moda seafront",
+          "category": "nature",
+          "cost_usd": null,
+          "start_time": null,
+          "description": "Flat, breezy promenade with tea gardens looking back at the Old City skyline — the best free view in Istanbul at golden hour.",
+          "duration_minutes": 75
+        },
+        {
+          "lat": 40.9902,
+          "lng": 29.0256,
+          "time": "evening",
+          "place": "Kadıköy Çarşı",
+          "title": "Farewell fish dinner at Çiya Kebap or a Moda meyhane",
+          "category": "food",
+          "cost_usd": 35,
+          "start_time": null,
+          "description": "Round off with grilled fish and mezes near the market, then catch the last ferries back (they run until around midnight).",
+          "duration_minutes": 120
+        }
+      ]
+    }
+  ],
+  "tips": [
+    "Get an İstanbulkart at any ferry or metro station and load it for both of you — it covers ferries, trams and buses.",
+    "Book Pandeli, Asmalı Cavit and Mikla a few days ahead; the small meyhanes fill up fast on weekends.",
+    "Çiya Sofrası and market stalls are cash-friendly; carry some lira even though cards are widely accepted.",
+    "April evenings drop to around 6°C with Bosphorus wind — bring a warm layer for the ferry deck and rooftop bar.",
+    "Eat lightly at breakfast on Day 1 and 3; lunches here are the main event."
+  ],
+  "title": "Istanbul for Eaters: 3 Days Across Two Continents",
+  "center": {
+    "lat": 41.01384,
+    "lng": 28.94966
+  },
+  "country": "Türkiye",
+  "summary": "A three-day food crawl through Istanbul for two: Ottoman classics and spice-market snacking in the Old City, a modern Beyoğlu–Galata day of meyhane mezes and fine dining, and a final day of Anatolian home cooking in Kadıköy on the Asian side. Paced with walks between meals and light arrival/departure days.",
+  "end_date": "2027-04-12",
+  "travelers": 2,
+  "start_date": "2027-04-10",
+  "destination": "Istanbul"
+}

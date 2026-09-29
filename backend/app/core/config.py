@@ -78,6 +78,15 @@ class Settings(BaseSettings):
     flight_search_rate_limit_per_minute: int = 30
     chat_rate_limit_per_hour: int = 30
 
+    @field_validator("database_url")
+    @classmethod
+    def _asyncpg_scheme(cls, value: str) -> str:
+        # Hosting platforms (Render, Railway, Heroku) hand out plain postgres:// URLs.
+        for prefix in ("postgres://", "postgresql://"):
+            if value.startswith(prefix):
+                return "postgresql+asyncpg://" + value[len(prefix) :]
+        return value
+
     @field_validator("cors_origins", mode="before")
     @classmethod
     def _split_origins(cls, value: object) -> object:

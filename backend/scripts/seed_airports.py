@@ -4,13 +4,16 @@ Keeps large and medium airports that have an IATA code and scheduled passenger s
 (~4k rows). Safe to re-run: rows are upserted.
 
     uv run python -m scripts.seed_airports
+    uv run python -m scripts.seed_airports --if-empty   # used on container start
 """
 
 import asyncio
 import csv
 import io
+import sys
 
 import httpx
+from sqlalchemy import func, select
 from sqlalchemy.dialects.postgresql import insert
 
 from app.core.config import get_settings
@@ -57,6 +60,13 @@ def _to_row(raw: dict[str, str], countries: dict[str, str]) -> dict[str, object]
 
 async def main() -> None:
     configure_logging(get_settings())
+    if "--if-empty" in sys.argv:
+        async with SessionLocal() as session:
+            count = await session.scalar(select(func.count()).select_from(Airport))
+        if count:
+            logger.info("airports_already_seeded", count=count)
+            await engine.dispose()
+            return
     async with httpx.AsyncClient(timeout=60, follow_redirects=True) as client:
         airports_raw, countries_raw = await asyncio.gather(
             _download(client, AIRPORTS_URL), _download(client, COUNTRIES_URL)

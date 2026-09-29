@@ -22,5 +22,5 @@ RUN useradd --create-home --uid 1000 wanderly && chown -R wanderly /app
 USER wanderly
 
 EXPOSE 8000
-# Migrations run on container start so a fresh deploy is always at head.
-CMD ["sh", "-c", "alembic upgrade head && uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8000} --proxy-headers --forwarded-allow-ips='*'"]
+# Migrations and seed data run on container start so a fresh deploy is ready to demo.
+CMD ["sh", "scripts/start.sh"]

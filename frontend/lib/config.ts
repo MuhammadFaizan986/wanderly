@@ -1,4 +1,5 @@
 export const config = {
   appName: "Wanderly",
-  apiDocsUrl: process.env.NEXT_PUBLIC_API_DOCS_URL ?? "http://localhost:8100/docs",
+  // The API docs are proxied through the site (see next.config.ts).
+  apiDocsUrl: process.env.NEXT_PUBLIC_API_DOCS_URL ?? "/docs",
 } as const;
