@@ -1,4 +1,4 @@
-import type { FlightOffer } from "@/lib/types";
+import type { FlightOffer, Itinerary } from "@/lib/types";
 
 export interface FlightCardsPayload {
   type: "flight_cards";
@@ -26,6 +26,14 @@ export interface WeatherPayload {
   }[];
 }
 
+export interface ItineraryMarker {
+  type: "itinerary";
+  action: "created" | "updated";
+  title: string;
+  day_count: number;
+  itinerary?: Itinerary; // present on live events, omitted in stored history
+}
+
 export interface ToolItem {
   id: string;
   name: string;
@@ -37,13 +45,15 @@ export type MessagePart =
   | { kind: "text"; text: string }
   | { kind: "tools"; items: ToolItem[] }
   | { kind: "flights"; payload: FlightCardsPayload }
-  | { kind: "weather"; payload: WeatherPayload };
+  | { kind: "weather"; payload: WeatherPayload }
+  | { kind: "itinerary"; payload: ItineraryMarker };
 
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant";
   parts: MessagePart[];
   status?: "thinking" | "streaming" | "done" | "error";
+  pendingTool?: string;
   error?: string;
 }
 
@@ -54,8 +64,10 @@ export interface ConversationDetail {
     id: string;
     role: "user" | "assistant" | "tool";
     content: string;
-    ui: (FlightCardsPayload | WeatherPayload)[];
+    ui: (FlightCardsPayload | WeatherPayload | ItineraryMarker)[];
   }[];
+  itinerary: Itinerary | null;
+  trip_id: string | null;
 }
 
 /** Rebuild UI messages from stored history: consecutive non-user rows form one reply. */
@@ -73,12 +85,18 @@ export function fromHistory(detail: ConversationDetail): ChatMessage[] {
     }
     if (row.content) last.parts.push({ kind: "text", text: row.content });
     for (const ui of row.ui) {
-      last.parts.push(
-        ui.type === "flight_cards"
-          ? { kind: "flights", payload: ui }
-          : { kind: "weather", payload: ui },
-      );
+      if (ui.type === "flight_cards") last.parts.push({ kind: "flights", payload: ui });
+      else if (ui.type === "weather") last.parts.push({ kind: "weather", payload: ui });
+      else last.parts.push({ kind: "itinerary", payload: ui });
     }
   }
   return out;
+}
+
+/** Day numbers whose content differs between two versions of an itinerary. */
+export function changedDays(prev: Itinerary | null, next: Itinerary): number[] {
+  if (!prev) return [];
+  return next.days
+    .filter((d) => JSON.stringify(d) !== JSON.stringify(prev.days.find((p) => p.day === d.day)))
+    .map((d) => d.day);
 }

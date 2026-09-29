@@ -1,5 +1,6 @@
 """Tools the travel agent can call. Inputs are validated with Pydantic before running."""
 
+import uuid
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from datetime import date, timedelta
@@ -14,7 +15,9 @@ from app.clients.weather import WeatherClient
 from app.core.exceptions import AppError
 from app.repositories.airports import AirportRepository
 from app.schemas.flight import CabinClass, FlightOffer, FlightSearchRequest
+from app.schemas.itinerary import Itinerary, ItineraryUpdate
 from app.services.flight_service import FlightService
+from app.services.itinerary_service import ItineraryService, apply_update
 
 MAX_OFFERS_FOR_MODEL = 5  # trimmed results keep tokens (and cost) down
 MAX_CARDS = 5
@@ -31,6 +34,7 @@ class ToolOutput:
 class ToolContext:
     session: AsyncSession
     redis: Redis
+    conversation_id: uuid.UUID
 
 
 # ---- Inputs ------------------------------------------------------------------------
@@ -57,9 +61,13 @@ class GetWeatherInput(BaseModel):
     end_date: date = Field(description="YYYY-MM-DD, at most 30 days after start_date")
 
 
-def _spec(name: str, description: str, model: type[BaseModel]) -> ToolSpec:
+def _spec(
+    name: str, description: str, model: type[BaseModel], hide: tuple[str, ...] = ()
+) -> ToolSpec:
     schema = model.model_json_schema()
     schema.pop("title", None)
+    for key in hide:  # server-managed fields the model shouldn't fill in
+        schema.get("properties", {}).pop(key, None)
     return ToolSpec(name=name, description=description, input_schema=schema)
 
 
@@ -85,6 +93,21 @@ TOOL_SPECS = [
         "days, otherwise typical conditions based on the same dates last year. Use it to compare "
         "destinations or advise on packing.",
         GetWeatherInput,
+    ),
+    _spec(
+        "create_itinerary",
+        "Create a day-by-day itinerary for the trip. It appears in the traveler's itinerary "
+        "panel with a map, so include accurate coordinates for every place. Use it once the "
+        "destination and trip length are known. Replaces any existing itinerary.",
+        Itinerary,
+        hide=("center",),
+    ),
+    _spec(
+        "update_itinerary",
+        "Change the current itinerary. Send only what changes: full replacements for edited "
+        "or added days (with their day number), day numbers to remove, or new title/summary/"
+        "tips/start_date. Use for refinements like 'more food on day 2' or 'make day 3 relaxed'.",
+        ItineraryUpdate,
     ),
 ]
 
@@ -231,11 +254,62 @@ async def get_weather(ctx: ToolContext, data: GetWeatherInput) -> ToolOutput:
     )
 
 
+def _itinerary_ui(itinerary: dict[str, Any], action: str) -> dict[str, Any]:
+    return {
+        "type": "itinerary",
+        "action": action,
+        "title": itinerary["title"],
+        "day_count": len(itinerary["days"]),
+        "itinerary": itinerary,
+    }
+
+
+def _itinerary_ack(itinerary: Itinerary, dropped: int, action: str) -> dict[str, Any]:
+    ack: dict[str, Any] = {
+        "status": action,
+        "days": [f"Day {d.day}: {d.title}" for d in itinerary.days],
+        "note": "Shown in the traveler's itinerary panel with a map; don't repeat it in full.",
+    }
+    if dropped:
+        ack["warning"] = (
+            f"{dropped} place(s) had coordinates far from {itinerary.destination} "
+            "and were left off the map."
+        )
+    return ack
+
+
+async def create_itinerary(ctx: ToolContext, data: Itinerary) -> ToolOutput:
+    service = ItineraryService(ctx.session, ctx.redis)
+    itinerary, dropped = await service.check_pins(data)
+    saved = await service.save_to_conversation(ctx.conversation_id, itinerary)
+    return ToolOutput(
+        _itinerary_ack(itinerary, dropped, "created"), ui=[_itinerary_ui(saved, "created")]
+    )
+
+
+async def update_itinerary(ctx: ToolContext, data: ItineraryUpdate) -> ToolOutput:
+    service = ItineraryService(ctx.session, ctx.redis)
+    current = await service.current(ctx.conversation_id)
+    if current is None:
+        return ToolOutput("There is no itinerary yet. Use create_itinerary first.", is_error=True)
+    try:
+        updated = apply_update(current, data)
+    except ValidationError as exc:
+        return ToolOutput(f"INVALID_UPDATE: {exc.errors()[0]['msg']}", is_error=True)
+    itinerary, dropped = await service.check_pins(updated)
+    saved = await service.save_to_conversation(ctx.conversation_id, itinerary)
+    return ToolOutput(
+        _itinerary_ack(itinerary, dropped, "updated"), ui=[_itinerary_ui(saved, "updated")]
+    )
+
+
 Handler = Callable[[ToolContext, Any], Awaitable[ToolOutput]]
 HANDLERS: dict[str, tuple[type[BaseModel], Handler]] = {
     "search_airports": (SearchAirportsInput, search_airports),
     "search_flights": (SearchFlightsInput, search_flights),
     "get_weather": (GetWeatherInput, get_weather),
+    "create_itinerary": (Itinerary, create_itinerary),
+    "update_itinerary": (ItineraryUpdate, update_itinerary),
 }
 
 
@@ -254,6 +328,10 @@ def status_label(name: str, raw: Any) -> str:
         return f"Checking the weather in {args.get('location', 'your destination')}"
     if name == "search_airports":
         return f"Looking up airports for “{args.get('query', '')}”"
+    if name == "create_itinerary":
+        return f"Building your {args.get('destination', 'trip')} itinerary"
+    if name == "update_itinerary":
+        return "Updating your itinerary"
     return "Working on it"
 
 
@@ -263,6 +341,10 @@ async def run_tool(ctx: ToolContext, name: str, raw: Any) -> ToolOutput:
     try:
         data = parse_input(name, raw)
     except ValidationError as exc:
-        return ToolOutput(f"INVALID_INPUT: {exc.errors()[0]['msg']}", is_error=True)
+        # Report every problem so the model can fix them all in one retry.
+        problems = "; ".join(
+            f"{'.'.join(str(p) for p in e['loc'])}: {e['msg']}" for e in exc.errors()[:8]
+        )
+        return ToolOutput(f"INVALID_INPUT: {problems}", is_error=True)
     _, handler = HANDLERS[name]
     return await handler(ctx, data)

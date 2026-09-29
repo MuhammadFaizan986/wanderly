@@ -6,7 +6,7 @@ import { config } from "@/lib/config";
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-border/60">
+    <footer className="mt-auto border-t border-border/60 print:hidden">
       <div className="mx-auto flex max-w-7xl flex-col gap-6 px-4 py-10 sm:flex-row sm:items-center sm:justify-between sm:px-6">
         <div className="space-y-3">
           <Logo />

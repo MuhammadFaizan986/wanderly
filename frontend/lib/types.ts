@@ -210,3 +210,68 @@ export interface BookingSummary {
   airline_logo_url: string | null;
   created_at: string;
 }
+
+// ---- Itineraries -------------------------------------------------------------------------
+
+export type ActivityCategory =
+  "sight" | "food" | "activity" | "nature" | "shopping" | "nightlife" | "transport" | "rest";
+
+export interface Activity {
+  time: "morning" | "afternoon" | "evening" | "night";
+  start_time: string | null;
+  title: string;
+  description: string;
+  place: string;
+  category: ActivityCategory;
+  lat: number | null;
+  lng: number | null;
+  duration_minutes: number | null;
+  cost_usd: number | null;
+}
+
+export interface ItineraryDay {
+  day: number;
+  date: string | null;
+  title: string;
+  activities: Activity[];
+}
+
+export interface Itinerary {
+  title: string;
+  destination: string;
+  country: string;
+  start_date: string | null;
+  end_date: string | null;
+  travelers: number | null;
+  summary: string;
+  days: ItineraryDay[];
+  tips: string[];
+  center: { lat: number; lng: number } | null;
+}
+
+export interface TripSummary {
+  id: string;
+  title: string;
+  destination: string;
+  start_date: string | null;
+  end_date: string | null;
+  day_count: number;
+  is_public: boolean;
+  share_slug: string | null;
+  updated_at: string;
+}
+
+export interface Trip extends TripSummary {
+  itinerary: Itinerary;
+  conversation_id: string | null;
+  created_at: string;
+}
+
+export interface PublicTrip {
+  title: string;
+  destination: string;
+  start_date: string | null;
+  end_date: string | null;
+  itinerary: Itinerary;
+  owner_first_name: string | null;
+}

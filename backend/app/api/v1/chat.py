@@ -82,6 +82,8 @@ async def get_conversation(
         created_at=conversation.created_at,
         updated_at=conversation.updated_at,
         messages=messages,
+        itinerary=conversation.itinerary,
+        trip_id=conversation.trip_id,
     )
 
 

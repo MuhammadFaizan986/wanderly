@@ -4,13 +4,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 
 import { api, ApiError, streamEvents } from "@/lib/api";
 import {
+  changedDays as diffDays,
   fromHistory,
   type ChatMessage,
   type ConversationDetail,
   type FlightCardsPayload,
+  type ItineraryMarker,
   type MessagePart,
   type WeatherPayload,
 } from "@/lib/chat";
+import type { Itinerary } from "@/lib/types";
 
 type Updater = (message: ChatMessage) => ChatMessage;
 
@@ -21,7 +24,7 @@ function appendText(parts: MessagePart[], text: string): MessagePart[] {
   return [...parts, { kind: "text", text }];
 }
 
-export function useChat(conversationIdFromUrl: string | null) {
+export function useChat(conversationIdFromUrl: string | null, authReady: boolean) {
   // Read the URL only on mount: we write ?c= ourselves after creating a conversation,
   // and reacting to that change would reload (and wipe) the reply being streamed.
   const [initialConversationId] = useState(conversationIdFromUrl);
@@ -29,21 +32,33 @@ export function useChat(conversationIdFromUrl: string | null) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(!!initialConversationId);
   const [streaming, setStreaming] = useState(false);
+  const [itinerary, setItinerary] = useState<Itinerary | null>(null);
+  const [tripId, setTripId] = useState<string | null>(null);
+  const [changed, setChanged] = useState<number[]>([]);
   const abortRef = useRef<AbortController | null>(null);
+  const itineraryRef = useRef<Itinerary | null>(null);
+  const changedTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Load an existing conversation (e.g. after a refresh with ?c=...).
   useEffect(() => {
-    if (!initialConversationId) return;
+    // Wait until the session is restored: an owned chat 404s for anonymous requests.
+    if (!initialConversationId || !authReady) return;
     let cancelled = false;
     api
       .get<ConversationDetail>(`/chat/conversations/${initialConversationId}`)
-      .then((detail) => !cancelled && setMessages(fromHistory(detail)))
+      .then((detail) => {
+        if (cancelled) return;
+        setMessages(fromHistory(detail));
+        setItinerary(detail.itinerary);
+        itineraryRef.current = detail.itinerary;
+        setTripId(detail.trip_id);
+      })
       .catch(() => !cancelled && setConversationId(null))
       .finally(() => !cancelled && setLoadingHistory(false));
     return () => {
       cancelled = true;
     };
-  }, [initialConversationId]);
+  }, [initialConversationId, authReady]);
 
   const updateLast = useCallback((fn: Updater) => {
     setMessages((prev) => {
@@ -88,8 +103,14 @@ export function useChat(conversationIdFromUrl: string | null) {
           const payload = data as Record<string, unknown>;
           switch (event) {
             case "thinking":
-            case "tool_pending":
               updateLast((m) => ({ ...m, status: "thinking" }));
+              break;
+            case "tool_pending":
+              updateLast((m) => ({
+                ...m,
+                status: "thinking",
+                pendingTool: payload.name as string,
+              }));
               break;
             case "text":
               updateLast((m) => ({
@@ -106,6 +127,7 @@ export function useChat(conversationIdFromUrl: string | null) {
               break;
             case "tool_start":
               updateLast((m) => {
+                m = { ...m, pendingTool: undefined };
                 const item = {
                   id: payload.id as string,
                   name: payload.name as string,
@@ -146,6 +168,26 @@ export function useChat(conversationIdFromUrl: string | null) {
                 ],
               }));
               break;
+            case "itinerary": {
+              const marker = payload as unknown as ItineraryMarker;
+              if (marker.itinerary) {
+                const next = marker.itinerary;
+                setChanged(diffDays(itineraryRef.current, next));
+                if (changedTimer.current) clearTimeout(changedTimer.current);
+                changedTimer.current = setTimeout(() => setChanged([]), 6000);
+                itineraryRef.current = next;
+                setItinerary(next);
+              }
+              updateLast((m) => ({
+                ...m,
+                pendingTool: undefined,
+                parts: [
+                  ...m.parts,
+                  { kind: "itinerary", payload: { ...marker, itinerary: undefined } },
+                ],
+              }));
+              break;
+            }
             case "weather":
               updateLast((m) => ({
                 ...m,
@@ -188,11 +230,26 @@ export function useChat(conversationIdFromUrl: string | null) {
     abortRef.current?.abort();
     setConversationId(null);
     setMessages([]);
+    setItinerary(null);
+    itineraryRef.current = null;
+    setTripId(null);
     const url = new URL(window.location.href);
     url.searchParams.delete("c");
     url.searchParams.delete("q");
     window.history.replaceState(null, "", url);
   }, []);
 
-  return { conversationId, messages, send, stop, reset, streaming, loadingHistory };
+  return {
+    conversationId,
+    messages,
+    send,
+    stop,
+    reset,
+    streaming,
+    loadingHistory,
+    itinerary,
+    tripId,
+    setTripId,
+    changedDays: changed,
+  };
 }

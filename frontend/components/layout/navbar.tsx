@@ -33,7 +33,7 @@ export function Navbar() {
       animate={{ y: 0, opacity: 1 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
       className={cn(
-        "sticky top-0 z-40 border-b transition-colors duration-300",
+        "sticky top-0 z-40 border-b transition-colors duration-300 print:hidden",
         scrolled
           ? "border-border/70 bg-background/75 shadow-soft backdrop-blur-xl"
           : "border-transparent bg-transparent",

@@ -33,7 +33,7 @@ logger = get_logger(__name__)
 
 @dataclass(frozen=True)
 class AgentEvent:
-    # text | thinking | tool_pending | tool_start | tool_end | flight_cards | weather
+    # text | thinking | tool_pending | tool_start | tool_end | flight_cards | weather | itinerary
     # | text_reset | done | error
     event: str
     data: dict[str, Any]
@@ -185,7 +185,8 @@ class TravelAgent:
             ui_payloads: list[dict[str, Any]] = []
             for call, output in zip(result.tool_calls, outputs, strict=True):
                 for ui in output.ui:
-                    ui_payloads.append(ui)
+                    # History keeps a light marker; the full itinerary lives on the conversation.
+                    ui_payloads.append({k: v for k, v in ui.items() if k != "itinerary"})
                     yield AgentEvent(ui["type"], ui)
                 yield AgentEvent(
                     "tool_end", {"id": call.id, "name": call.name, "ok": not output.is_error}
@@ -228,7 +229,8 @@ class TravelAgent:
         async def one(call: ToolCall) -> ToolOutput:
             async with SessionLocal() as session:
                 try:
-                    return await run_tool(ToolContext(session, self.redis), call.name, call.input)
+                    context = ToolContext(session, self.redis, self.conversation_id)
+                    return await run_tool(context, call.name, call.input)
                 except Exception:
                     logger.exception("tool_failed", tool=call.name)
                     return ToolOutput(

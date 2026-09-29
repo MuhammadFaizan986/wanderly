@@ -3,7 +3,7 @@ from functools import cache
 from pathlib import Path
 
 PROMPTS_DIR = Path(__file__).parent
-SYSTEM_PROMPT_VERSION = "system_v1"
+SYSTEM_PROMPT_VERSION = "system_v2"
 
 
 @cache

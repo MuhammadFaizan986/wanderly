@@ -26,6 +26,8 @@ class ChatMessageRead(ApiModel):
 
 class ConversationDetail(ConversationRead):
     messages: list[ChatMessageRead]
+    itinerary: dict[str, Any] | None = None
+    trip_id: uuid.UUID | None = None
 
 
 class SendMessageRequest(ApiModel):

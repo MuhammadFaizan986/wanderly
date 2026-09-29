@@ -1,14 +1,18 @@
 "use client";
 
-import { Loader2, Plus, Sparkles } from "lucide-react";
+import { CalendarRange, Loader2, Plus, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import { useSearchParams } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 
+import { useAuth } from "@/components/auth/auth-provider";
 import { Composer } from "@/components/chat/composer";
 import { MessageBubble } from "@/components/chat/message-bubble";
+import { ItineraryPanel } from "@/components/itinerary/itinerary-panel";
 import { AnimatedBackground } from "@/components/landing/animated-background";
 import { Button } from "@/components/ui/button";
+import { Sheet, SheetContent, SheetTitle } from "@/components/ui/sheet";
+import { useMediaQuery } from "@/hooks/use-media-query";
 import { useChat } from "@/hooks/use-chat";
 
 const SUGGESTIONS = [
@@ -20,7 +24,27 @@ const SUGGESTIONS = [
 
 export function ChatPage() {
   const params = useSearchParams();
-  const { messages, send, stop, reset, streaming, loadingHistory } = useChat(params.get("c"));
+  const { status: authStatus } = useAuth();
+  const {
+    conversationId,
+    messages,
+    send,
+    stop,
+    reset,
+    streaming,
+    loadingHistory,
+    itinerary,
+    tripId,
+    setTripId,
+    changedDays,
+  } = useChat(params.get("c"), authStatus !== "loading");
+  const desktop = useMediaQuery("(min-width: 1024px)", true);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const openItinerary = () => {
+    if (desktop) panelRef.current?.scrollTo({ top: 0, behavior: "smooth" });
+    else setSheetOpen(true);
+  };
   const bottomRef = useRef<HTMLDivElement>(null);
   const initialPrompt = useRef(params.get("c") ? null : params.get("q"));
 
@@ -42,9 +66,15 @@ export function ChatPage() {
   const empty = messages.length === 0;
 
   return (
-    <section className="relative isolate flex min-h-[calc(100dvh-7rem)] flex-1 flex-col">
+    <section className="relative isolate flex min-h-[calc(100dvh-7rem)] flex-1">
       {empty && <AnimatedBackground />}
-      <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6">
+      <div
+        className={
+          itinerary
+            ? "mx-auto flex w-full max-w-3xl min-w-0 flex-1 flex-col px-4 sm:px-6 xl:px-10"
+            : "mx-auto flex w-full max-w-3xl flex-1 flex-col px-4 sm:px-6"
+        }
+      >
         {loadingHistory ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="size-6 animate-spin text-primary" />
@@ -101,19 +131,54 @@ export function ChatPage() {
               </Button>
             </div>
             {messages.map((m) => (
-              <MessageBubble key={m.id} message={m} />
+              <MessageBubble key={m.id} message={m} onOpenItinerary={openItinerary} />
             ))}
             <div ref={bottomRef} />
           </div>
         )}
 
         <div className="sticky bottom-0 z-20 -mx-4 bg-linear-to-t from-background via-background/95 to-transparent px-4 pt-6 pb-4 sm:-mx-6 sm:px-6">
+          {itinerary && !desktop && (
+            <div className="mb-3 flex justify-center">
+              <Button variant="ink" className="h-10 px-5" onClick={() => setSheetOpen(true)}>
+                <CalendarRange /> View itinerary · {itinerary.days.length} days
+              </Button>
+            </div>
+          )}
           <Composer onSend={send} onStop={stop} streaming={streaming} autoFocus />
           <p className="mt-2 text-center text-[0.7rem] text-muted-foreground">
             Wanderly can make mistakes. Prices and times come from live search results.
           </p>
         </div>
       </div>
+
+      {itinerary && desktop && (
+        <aside className="sticky top-18 hidden h-[calc(100dvh-4.5rem)] w-[30rem] shrink-0 border-l border-border bg-card/40 backdrop-blur lg:block xl:w-[36rem]">
+          <div ref={panelRef} className="h-full overflow-y-auto p-5">
+            <ItineraryPanel
+              conversationId={conversationId}
+              itinerary={itinerary}
+              tripId={tripId}
+              onSaved={setTripId}
+              changedDays={changedDays}
+            />
+          </div>
+        </aside>
+      )}
+      {itinerary && !desktop && (
+        <Sheet open={sheetOpen} onOpenChange={setSheetOpen}>
+          <SheetContent side="bottom" className="h-[88dvh] overflow-y-auto rounded-t-3xl p-5">
+            <SheetTitle className="sr-only">Itinerary</SheetTitle>
+            <ItineraryPanel
+              conversationId={conversationId}
+              itinerary={itinerary}
+              tripId={tripId}
+              onSaved={setTripId}
+              changedDays={changedDays}
+            />
+          </SheetContent>
+        </Sheet>
+      )}
     </section>
   );
 }

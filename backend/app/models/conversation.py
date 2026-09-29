@@ -17,6 +17,8 @@ class Conversation(UUIDPrimaryKeyMixin, TimestampMixin, Base):
     )
     trip_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("trips.id", ondelete="SET NULL"))
     title: Mapped[str | None] = mapped_column(String(200))
+    # Working itinerary drafted in this chat; copied to a Trip when the traveler saves it.
+    itinerary: Mapped[dict[str, Any] | None]
 
     messages: Mapped[list["Message"]] = relationship(
         back_populates="conversation",

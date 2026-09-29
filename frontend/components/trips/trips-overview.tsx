@@ -1,7 +1,7 @@
 "use client";
 
 import { differenceInCalendarDays, format, parseISO } from "date-fns";
-import { ChevronRight, Luggage, Plane, Sparkles } from "lucide-react";
+import { CalendarRange, ChevronRight, Globe, Luggage, Plane, Sparkles } from "lucide-react";
 import { motion } from "motion/react";
 import type { Route } from "next";
 import Link from "next/link";
@@ -12,8 +12,9 @@ import { AirlineLogo } from "@/components/flights/airline-logo";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useBookings } from "@/hooks/use-bookings";
+import { useTrips } from "@/hooks/use-trips";
 import { formatMoney } from "@/lib/flights";
-import type { BookingSummary } from "@/lib/types";
+import type { BookingSummary, TripSummary } from "@/lib/types";
 import { cn } from "@/lib/utils";
 
 // Booking times are stored as local wall-clock values; read them without timezone shifts.
@@ -72,10 +73,44 @@ function BookingCard({ booking, index }: { booking: BookingSummary; index: numbe
   );
 }
 
+function ItineraryCard({ trip, index }: { trip: TripSummary; index: number }) {
+  return (
+    <motion.li
+      initial={{ opacity: 0, y: 16 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.05 }}
+    >
+      <Link
+        href={`/trips/${trip.id}` as Route}
+        className="group flex items-center gap-4 rounded-3xl border border-border bg-card p-4 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-lift sm:p-5"
+      >
+        <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-[image:var(--gradient-brand)] text-white">
+          <CalendarRange className="size-6" />
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="truncate font-semibold">{trip.title}</p>
+          <p className="truncate text-sm text-muted-foreground">
+            {trip.destination} · {trip.day_count} days
+            {trip.start_date && ` · from ${format(parseISO(trip.start_date), "d MMM yyyy")}`}
+          </p>
+          {trip.is_public && (
+            <p className="mt-1 inline-flex items-center gap-1 text-xs font-medium text-primary">
+              <Globe className="size-3.5" /> Shared publicly
+            </p>
+          )}
+        </div>
+        <ChevronRight className="size-5 text-muted-foreground transition-transform group-hover:translate-x-1" />
+      </Link>
+    </motion.li>
+  );
+}
+
 export function TripsOverview() {
   const { user } = useAuth();
-  const { data, isPending } = useBookings();
-  const [tab, setTab] = useState<"upcoming" | "past">("upcoming");
+  const { data, isPending: bookingsPending } = useBookings();
+  const trips = useTrips();
+  const [tab, setTab] = useState<"upcoming" | "past" | "itineraries">("upcoming");
+  const isPending = tab === "itineraries" ? trips.isPending : bookingsPending;
 
   const today = new Date(new Date().toDateString());
   const upcoming = (data ?? []).filter((b) => localDay(b.departure_at) >= today);
@@ -90,7 +125,7 @@ export function TripsOverview() {
       <p className="mt-1 text-muted-foreground">Your bookings and saved itineraries live here.</p>
 
       <div className="mt-8 flex gap-1 rounded-full bg-muted p-1 text-sm font-medium sm:w-fit">
-        {(["upcoming", "past"] as const).map((key) => (
+        {(["upcoming", "past", "itineraries"] as const).map((key) => (
           <button
             key={key}
             type="button"
@@ -107,7 +142,10 @@ export function TripsOverview() {
               />
             )}
             <span className="relative">
-              {key} {data && `(${key === "upcoming" ? upcoming.length : past.length})`}
+              {key}{" "}
+              {key === "itineraries"
+                ? trips.data && `(${trips.data.length})`
+                : data && `(${key === "upcoming" ? upcoming.length : past.length})`}
             </span>
           </button>
         ))}
@@ -120,7 +158,13 @@ export function TripsOverview() {
               <Skeleton key={i} className="h-24 rounded-3xl" />
             ))}
           </div>
-        ) : list.length > 0 ? (
+        ) : tab === "itineraries" && trips.data && trips.data.length > 0 ? (
+          <ul className="space-y-4">
+            {trips.data.map((t, i) => (
+              <ItineraryCard key={t.id} trip={t} index={i} />
+            ))}
+          </ul>
+        ) : tab !== "itineraries" && list.length > 0 ? (
           <ul className="space-y-4">
             {list.map((b, i) => (
               <BookingCard key={b.id} booking={b} index={i} />
@@ -132,7 +176,11 @@ export function TripsOverview() {
               <Luggage className="size-7" />
             </span>
             <h2 className="text-xl font-semibold">
-              {tab === "upcoming" ? "No upcoming trips" : "No past trips yet"}
+              {tab === "upcoming"
+                ? "No upcoming trips"
+                : tab === "past"
+                  ? "No past trips yet"
+                  : "No saved itineraries yet"}
             </h2>
             <p className="max-w-sm text-muted-foreground">
               Plan a trip with the AI assistant or search for flights to get started.
