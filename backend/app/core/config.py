@@ -91,7 +91,8 @@ class Settings(BaseSettings):
     @classmethod
     def _split_origins(cls, value: object) -> object:
         if isinstance(value, str):
-            return [origin.strip() for origin in value.split(",") if origin.strip()]
+            # Browsers send origins without a trailing slash, so strip any that were pasted in.
+            return [o.strip().rstrip("/") for o in value.split(",") if o.strip()]
         return value
 
     @model_validator(mode="after")

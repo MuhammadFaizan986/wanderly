@@ -2,7 +2,8 @@ import type { NextConfig } from "next";
 
 // Server-side only: where the FastAPI backend lives (the Railway URL in production).
 // The browser talks to same-origin paths, so the httpOnly refresh cookie stays first-party.
-const apiUrl = process.env.API_URL ?? "http://localhost:8100";
+// Trailing slashes are stripped: "https://api.example.com/" would otherwise proxy to "//health".
+const apiUrl = (process.env.API_URL ?? "http://localhost:8100").replace(/\/+$/, "");
 
 const nextConfig: NextConfig = {
   typedRoutes: true,
