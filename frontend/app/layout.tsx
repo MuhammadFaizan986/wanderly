@@ -5,6 +5,7 @@ import { Footer } from "@/components/layout/footer";
 import { Navbar } from "@/components/layout/navbar";
 import { TestModeBanner } from "@/components/layout/test-mode-banner";
 import { Providers } from "@/components/providers";
+import { VisitPing } from "@/components/visit-ping";
 import "./globals.css";
 
 const poppins = Poppins({
@@ -48,6 +49,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <main className="flex flex-1 flex-col">{children}</main>
           <Footer />
         </Providers>
+        <VisitPing />
       </body>
     </html>
   );

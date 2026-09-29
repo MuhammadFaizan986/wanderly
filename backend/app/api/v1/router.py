@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from app.api.v1 import airports, auth, bookings, chat, destinations, flights, trips
+from app.api.v1 import airports, auth, bookings, chat, destinations, events, flights, trips
 
 api_router = APIRouter()
 api_router.include_router(auth.router)
@@ -11,5 +11,6 @@ api_router.include_router(bookings.router)
 api_router.include_router(chat.router)
 api_router.include_router(trips.router)
 api_router.include_router(trips.public_router)
+api_router.include_router(events.router)
 
 # Upcoming: alerts, admin (week 7)

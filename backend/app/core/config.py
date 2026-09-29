@@ -64,6 +64,15 @@ class Settings(BaseSettings):
     resend_api_key: SecretStr | None = None
     email_from: str = "Wanderly <onboarding@resend.dev>"
 
+    # Visit notifications: an email to the owner when someone opens the app.
+    # Both RESEND_API_KEY and NOTIFY_EMAIL_TO must be set or nothing is sent. Resend's
+    # shared sender needs no domain but only delivers to the account owner's address.
+    notify_email_to: str | None = None
+    notify_email_from: str = "Wanderly <onboarding@resend.dev>"
+    notify_max_per_hour: int = 12
+    # Look up the visitor's rough location from their IP (ipapi.co, best effort).
+    visit_geo_lookup: bool = True
+
     # Caching / limits
     flight_search_cache_ttl_seconds: int = 600
     flight_search_rate_limit_per_minute: int = 30
